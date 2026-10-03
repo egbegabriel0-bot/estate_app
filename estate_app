@@ -1,0 +1,98 @@
+import 'package:flutter/material.dart';
+
+void main() => runApp(const EstateApp());
+
+class EstateApp extends StatelessWidget {
+  const EstateApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Estate App',
+      theme: ThemeData(useMaterial3: true, scaffoldBackgroundColor: const Color(0xFFF6F6F6)),
+      home: const Dashboard(),
+    );
+  }
+}
+
+class Dashboard extends StatefulWidget {
+  const Dashboard({super.key});
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  String estateName = "My Estate";
+  List<Map<String, dynamic>> payments = [
+    {"name": "Chukwuemeka Okoro", "plot": "Plot 12", "inst": "2/6", "date": "10 Oct 2024", "amount": "₦250,000", "receipt": "#PAY-2847", "type": "Purchase", "color": const Color(0xFFA8D5BA)},
+    {"name": "Aisha Bello", "plot": "Plot 05", "inst": "1/3", "date": "08 Oct 2024", "amount": "₦120,000", "receipt": "#PAY-2831", "type": "Security", "color": const Color(0xFFF9C28A)},
+    {"name": "Tolu Adeyemi", "plot": "Plot 22", "inst": "4/6", "date": "05 Oct 2024", "amount": "₦180,000", "receipt": "#PAY-2820", "type": "Estate Due", "color": const Color(0xFFB8A6E8)},
+  ];
+
+  void _editEstate() async {
+    final c = TextEditingController(text: estateName);
+    final v = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text("Edit Estate Name"), content: TextField(controller: c),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")), ElevatedButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text("Save"))],
+    ));
+    if(v!=null && v.isNotEmpty) setState(()=>estateName=v);
+  }
+
+  void _addPayment(String type) {
+    final name = TextEditingController(); final plot = TextEditingController(); final amount = TextEditingController(); final inst = TextEditingController(text: "1/1");
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: Text("Add $type"),
+      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: name, decoration: const InputDecoration(labelText: "Tenant Name")),
+        TextField(controller: plot, decoration: const InputDecoration(labelText: "Plot No e.g Plot 12")),
+        TextField(controller: amount, decoration: const InputDecoration(labelText: "Amount e.g 250,000"), keyboardType: TextInputType.number),
+        TextField(controller: inst, decoration: const InputDecoration(labelText: "Installment e.g 2/6")),
+      ])),
+      actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text("Cancel")), ElevatedButton(onPressed: (){
+        if(name.text.isEmpty) return;
+        setState(()=>payments.insert(0, {"name": name.text, "plot": plot.text.isEmpty? "Plot 01" : plot.text, "inst": inst.text, "date": "${DateTime.now().day} Oct 2024", "amount": "₦${amount.text}", "receipt": "#PAY-${2800+payments.length}", "type": type, "color": const Color(0xFFA8D5BA)}));
+        Navigator.pop(ctx);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Instant Alert: ${name.text} paid $type - ₦${amount.text}"), backgroundColor: Colors.green));
+      }, child: const Text("Generate Receipt"))],
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text("Dashboard", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          Row(children: [
+            const Icon(Icons.notifications_none, size: 28),
+            const SizedBox(width: 12),
+            CircleAvatar(backgroundColor: Colors.grey[300], child: const Text("ME", style: TextStyle(fontSize: 10))),
+          ])
+        ]),
+        const SizedBox(height: 16),
+        GestureDetector(onTap: _editEstate, child: Container(
+          padding: const EdgeInsets.all(24), decoration: BoxDecoration(color: const Color(0xFF2E7D32), borderRadius: BorderRadius.circular(16)),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(estateName, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)), const Text("tap to edit", style: TextStyle(color: Colors.white70, fontSize: 16))]),
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.edit, color: Colors.black)),
+          ]),
+        )),
+        const SizedBox(height: 24),
+        const Text("Quick Actions", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        GridView.count(crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), childAspectRatio: 1.7, crossAxisSpacing: 12, mainAxisSpacing: 12, children: [
+          _quickCard(Icons.shopping_cart, "Purchase", "Supplies & Orders", const Color(0xFF90CAF9), const Color(0xFF1976D2), () => _addPayment("Purchase")),
+          _quickCard(Icons.shield_outlined, "Security", "Guards & Access", const Color(0xFFFFCC80), const Color(0xFFEF6C00), () => _addPayment("Security")),
+          _quickCard(Icons.construction, "Development", "Projects & Works", const Color(0xFFCE93D8), const Color(0xFF7B1FA2), () => _addPayment("Development")),
+          _quickCard(Icons.receipt_long, "Estate Due", "Fees & Invoices", const Color(0xFFEF9A9A), const Color(0xFFC62828), () => _addPayment("Estate Due")),
+        ]),
+        const SizedBox(height: 24),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Recent Payments", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), TextButton(onPressed: (){}, child: const Text("View All >", style: TextStyle(color: Color(0xFF2E7D32))))]),
+       ...payments.map((p) => Container(
+          margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+          child: Row(children: [
+            Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: p["color"], shape: BoxShape.circle), child: Icon(Icons.receipt, color: Colors.black.withOpacity(0.6))),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Expanded(child: Text(p["name"], style
